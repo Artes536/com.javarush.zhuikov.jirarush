@@ -39,6 +39,8 @@ public class TaskService {
     private final SprintRepository sprintRepository;
     private final TaskExtMapper extMapper;
     private final UserBelongRepository userBelongRepository;
+    private final TaskTagRepository taskTagRepository;
+    private final Handlers.TaskHandler taskHandler;
 
     @Transactional
     public void changeStatus(long taskId, String statusCode) {
@@ -139,5 +141,27 @@ public class TaskService {
         if (!userType.equals(possibleUserType)) {
             throw new DataConflictException(String.format(assign ? CANNOT_ASSIGN : CANNOT_UN_ASSIGN, userType, task.getStatusCode()));
         }
+    }
+    @Transactional
+    public void addTag(long taskId, String tag) {
+        Task task = taskHandler.getRepository().getExisted(taskId);
+        TaskTagId id = new TaskTagId();
+        id.setTaskId(taskId);
+        id.setTag(tag);
+
+        if (!taskTagRepository.existsById(id)) {
+            taskTagRepository.save(new TaskTag(task, tag));
+        }
+    }
+
+    public List<String> getTags(long taskId) {
+        return taskTagRepository.findByTaskId(taskId).stream()
+                .map(TaskTag::getTag)
+                .toList();
+    }
+
+    @Transactional
+    public void removeTag(long taskId, String tag) {
+        taskTagRepository.deleteById(new TaskTagId(taskId, tag));
     }
 }
